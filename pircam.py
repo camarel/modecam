@@ -13,18 +13,18 @@ class Pircam:
     def __init__(self, bot, pir_pin, camera_port):
         self.bot = bot
         self.pin = int(pir_pin)
+        self.camera_port = int(camera_port)
 
         # init pir sensor
         GPIO.setwarnings(False)
         GPIO.setmode(GPIO.BOARD)
         GPIO.setup(self.pin, GPIO.IN)
 
-        # init camera
-        self.camera_port = int(camera_port)
 
-
-    def takePicture(self):
+    def takePictures(self):
         print('taking picture')
+        frames = 0
+        loop = 0
 
         camera = cv2.VideoCapture(self.camera_port)
         camera.set(cv2.CAP_PROP_FRAME_WIDTH, self.image_width)
@@ -33,13 +33,24 @@ class Pircam:
         # camera.set(cv2.CAP_PROP_BRIGHTNESS, 190.0)
         camera.set(cv2.CAP_PROP_SATURATION, 50.0)
 
-        return_value, image = camera.read()
+        while 1 == GPIO.input(self.pin):
+            return_value, image = camera.read()
 
-        is_success, imbuffer = cv2.imencode(".jpg", image)
-        io_buf = BytesIO(imbuffer)
+            if frames == 0:
+                is_success, imbuffer = cv2.imencode(".jpg", image)
+                io_buf = BytesIO(imbuffer)
+
+                self.bot.callback(io_buf)
+                if (loop == 0):
+                    loop = 1
+                    frames = 10
+                else:
+                    frames = 80
+
+            else:
+                frames -= 1
 
         camera.release()
-        self.bot.callback(io_buf)
 
 
     def startThread(self):
@@ -54,15 +65,10 @@ class Pircam:
 
         while self.observing:
             if 0 == GPIO.input(self.pin):
-                print('-')
-            else:
-                print('detected movement')
-                self.takePicture()
                 time.sleep(1)
-                self.takePicture()
-                time.sleep(3)
-
-            time.sleep(1)
+                # print('-')
+            else:
+                self.takePictures()
 
         print('Stop observing')
 
