@@ -20,18 +20,29 @@ class Pircam:
         GPIO.setup(self.pin, GPIO.IN)
 
         # init camera
-        self.camera = cv2.VideoCapture(int(camera_port))
-        self.camera.set(cv2.CAP_PROP_FRAME_WIDTH, self.image_width)
-        self.camera.set(cv2.CAP_PROP_FRAME_HEIGHT, self.image_height)
+        self.camera_port = int(camera_port)
 
 
     def takePicture(self):
         print('taking picture')
-        return_value, image = self.camera.read()
-        cv2.imwrite('test.jpg', image) 
+
+        camera = cv2.VideoCapture(self.camera_port)
+        camera.set(cv2.CAP_PROP_FRAME_WIDTH, self.image_width)
+        camera.set(cv2.CAP_PROP_FRAME_HEIGHT, self.image_height)
+
+        # camera.set(cv2.CAP_PROP_BRIGHTNESS, 190.0)
+        camera.set(cv2.CAP_PROP_SATURATION, 50.0)
+
+        return_value, image = camera.read()
+
+        is_success, imbuffer = cv2.imencode(".jpg", image)
+        io_buf = BytesIO(imbuffer)
+
+        camera.release()
+        self.bot.callback(io_buf)
 
 
-    def start(self):
+    def startThread(self):
         print('start observer thread')
         thread = Thread(target = self.observe)
         thread.start()
@@ -47,6 +58,10 @@ class Pircam:
             else:
                 print('detected movement')
                 self.takePicture()
+                time.sleep(1)
+                self.takePicture()
+                time.sleep(3)
+
             time.sleep(1)
 
         print('Stop observing')
