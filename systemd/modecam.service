@@ -1,0 +1,14 @@
+[Unit]
+Description=modecam
+After=multi-user.target
+
+[Service]
+Type=idle
+User=pi
+StandardOutput=inherit
+StandardError=inherit
+Restart=always
+ExecStart=/home/pi/git/modecam/modecam
+
+[Install]
+WantedBy=multi-user.target
