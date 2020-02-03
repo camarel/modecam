@@ -86,7 +86,7 @@ class Modecam:
 
 
     # Callback when an image is taken
-    def callback(self, stream):
+    def sendPicture(self, stream):
         if len(self.watching_users) == 0:
             logger.info('no one watching')
         else:
@@ -98,6 +98,16 @@ class Modecam:
 
             stream.close()
 
+    # Callback when an audio is recorded
+    def sendAudio(self, stream):
+        if len(self.watching_users) == 0:
+            logger.info('no one watching')
+        else:
+            logger.info('sending voice message')
+
+            for userId in self.watching_users:
+                stream.seek(0)
+                self.bot.send_voice(chat_id=userId, voice=stream)
 
     # Turn the watch handler off.
     def off(self, update, context):
@@ -167,6 +177,9 @@ class Modecam:
 # Create the telegram bot
 modecam = Modecam()
 
-pircam = Pircam(modecam, config['DEFAULT']['PirPin'], config['DEFAULT']['CameraDeviceIndex'])
+pircam = Pircam(modecam,
+            config['DEFAULT']['PirPin'],
+            config['DEFAULT']['CameraDeviceIndex'],
+            config['DEFAULT']['AudioDeviceIndex'])
 
 modecam.startBot()

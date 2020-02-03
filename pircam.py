@@ -5,26 +5,33 @@ import cv2
 from threading import Thread
 from io import BytesIO
 
+from recorder import Recorder
+
 
 class Pircam:
     image_width  = 1280
     image_height = 720
 
-    def __init__(self, bot, pir_pin, camera_port):
+    def __init__(self, bot, pir_pin, camera_port, audio_index):
         self.bot = bot
         self.pin = int(pir_pin)
         self.camera_port = int(camera_port)
+        self.audio_index = int(audio_index)
 
         # init pir sensor
         GPIO.setwarnings(False)
         GPIO.setmode(GPIO.BOARD)
         GPIO.setup(self.pin, GPIO.IN)
 
+        self.recorder = Recorder(self.bot, self.audio_index)
+
 
     def takePictures(self):
         print('taking picture')
         frames = 0
         loop = 0
+
+        self.recorder.start()
 
         camera = cv2.VideoCapture(self.camera_port)
         camera.set(cv2.CAP_PROP_FRAME_WIDTH, self.image_width)
@@ -40,9 +47,9 @@ class Pircam:
                 is_success, imbuffer = cv2.imencode(".jpg", image)
                 io_buf = BytesIO(imbuffer)
 
-                self.bot.callback(io_buf)
-                if (loop == 0):
-                    loop = 1
+                self.bot.sendPicture(io_buf)
+                if (loop < 2):
+                    loop += 1
                     frames = 10
                 else:
                     frames = 80
@@ -51,6 +58,7 @@ class Pircam:
                 frames -= 1
 
         camera.release()
+        self.recorder.stop()
 
 
     def startThread(self):
@@ -66,7 +74,6 @@ class Pircam:
         while self.observing:
             if 0 == GPIO.input(self.pin):
                 time.sleep(1)
-                # print('-')
             else:
                 self.takePictures()
 
