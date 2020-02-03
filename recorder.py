@@ -1,10 +1,13 @@
 import pyaudio
 import wave
+import logging
 
 from io import BytesIO
 from pydub import AudioSegment
 from threading import Thread
 
+logging.basicConfig(format='%(levelname)s - %(message)s', level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 class Recorder:
     # audio settings
@@ -19,7 +22,7 @@ class Recorder:
         self.dev_index = int(dev_index)
 
 
-    def write(self, recording):
+    def sendAudio(self, recording):
        # creating wave
        wav = BytesIO()
        wf = wave.open(wav, 'wb')
@@ -32,7 +35,7 @@ class Recorder:
 
        # converting to mp3
        mp3 = BytesIO()
-       sound = AudioSegment.from_file(wav, format="wav")
+       sound = AudioSegment.from_file(wav, format='wav')
        sound.export(mp3, format='mp3')
        mp3.seek(0)
 
@@ -44,13 +47,12 @@ class Recorder:
 
 
     def start(self):
-        print('start observer thread')
         thread = Thread(target = self.record)
         thread.start()
 
 
     def record(self):
-        print('Listening beginning')
+        logger.info('start to record audio')
         self.listening = True
 
         self.p = pyaudio.PyAudio()
@@ -70,9 +72,9 @@ class Recorder:
             data = self.stream.read(self.chunk, exception_on_overflow = False)
             rec.append(data)
 
-        self.write(b''.join(rec))
+        logger.info('stop recording audio')
+        self.sendAudio(b''.join(rec))
 
-        print('Stop listening')
         self.stream.stop_stream()
         self.stream.close()
         self.p.terminate()

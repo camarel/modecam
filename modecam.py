@@ -10,7 +10,6 @@ from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 
 # Enable logging
 logging.basicConfig(format='%(levelname)s - %(message)s', level=logging.INFO)
-
 logger = logging.getLogger(__name__)
 
 config = configparser.ConfigParser()
@@ -74,7 +73,7 @@ class Modecam:
             else:
                 # start new pircam if first user
                 if len(self.watching_users) == 0:
-                    pircam.startThread()
+                    pircam.start()
 
                 self.watching_users.append(user['id'])
                 update.message.reply_text('starting to watch')
@@ -90,13 +89,12 @@ class Modecam:
         if len(self.watching_users) == 0:
             logger.info('no one watching')
         else:
-            logger.info('sending message')
+            logger.info('sending picture')
 
             for userId in self.watching_users:
                 stream.seek(0)
                 self.bot.send_photo(chat_id=userId, photo=stream)
 
-            stream.close()
 
     # Callback when an audio is recorded
     def sendAudio(self, stream):
