@@ -11,10 +11,10 @@ logger = logging.getLogger(__name__)
 
 class Recorder:
     # audio settings
-    chunk     = 1024  # record in chunks of 1024 samples
+    chunk     = 1024  # number of frames per chunks
     channels  = 1     # number of audio channels
-    rate      = 16000 # record at 16000 frames per second
-    sf        = pyaudio.paInt16 # 16 bits per sample
+    rate      = 16000 # frames per second
+    sf        = pyaudio.paInt16 # bits per frame
 
 
     def __init__(self, bot, dev_index):
@@ -22,28 +22,19 @@ class Recorder:
         self.dev_index = int(dev_index)
 
 
-    def sendAudio(self, recording):
-       # creating wave
-       wav = BytesIO()
-       wf = wave.open(wav, 'wb')
-       wf.setnchannels(self.channels)
-       wf.setsampwidth(self.p.get_sample_size(self.sf))
-       wf.setframerate(self.rate)
-       wf.writeframes(recording)
-       wf.close()
-       wav.seek(0)
+    def sendAudio(self, wav):
+        wav.seek(0)
 
-       # converting to mp3
-       mp3 = BytesIO()
-       sound = AudioSegment.from_file(wav, format='wav')
-       sound.export(mp3, format='mp3')
-       mp3.seek(0)
+        # converting to mp3
+        mp3 = BytesIO()
+        sound = AudioSegment.from_file(wav, format='wav')
+        sound.export(mp3, format='mp3')
+        mp3.seek(0)
 
-       self.bot.sendAudio(mp3)
+        self.bot.sendAudio(mp3)
 
-       # close streams
-       wav.close()
-       mp3.close()
+        # close streams
+        mp3.close()
 
 
     def start(self):
@@ -54,30 +45,44 @@ class Recorder:
     def record(self):
         logger.info('start to record audio')
         self.listening = True
+        pa = pyaudio.PyAudio()
 
-        self.p = pyaudio.PyAudio()
-        self.stream = self.p.open(format=self.sf,
+        # prepare wave
+        wav = BytesIO()
+        wf = wave.open(wav, 'wb')
+        wf.setnchannels(self.channels)
+        wf.setsampwidth(pa.get_sample_size(self.sf))
+        wf.setframerate(self.rate)
+
+        stream = pa.open(format=self.sf,
                                   channels=self.channels,
                                   rate=self.rate,
                                   input_device_index=self.dev_index,
                                   input=True,
                                   frames_per_buffer=self.chunk)
 
-        rec = []
         # current = time.time()
         # maxTime = time.time() + self.max_sec
 
+        # record audio
         while self.listening:
             # current = time.time()
-            data = self.stream.read(self.chunk, exception_on_overflow = False)
-            rec.append(data)
+            data = stream.read(self.chunk, exception_on_overflow = False)
+            wf.writeframes(data)
 
         logger.info('stop recording audio')
-        self.sendAudio(b''.join(rec))
 
-        self.stream.stop_stream()
-        self.stream.close()
-        self.p.terminate()
+        # closing audio
+        stream.stop_stream()
+        stream.close()
+        pa.terminate()
+        wf.close()
+
+        self.sendAudio(wav)
+        wav.close()
+
+        logger.info('finished audio recording')
+
 
     def stop(self):
         self.listening = False
