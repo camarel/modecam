@@ -3,6 +3,7 @@ import configparser
 import json
 import select
 import sys
+import subprocess
 
 from pircam import Pircam
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
@@ -84,7 +85,19 @@ class Modecam:
         logger.info('currently watching users: %s', self.watching_users)
 
 
-    # Callback when an image is taken
+    # status handler
+    def status(self, update, context):
+        statusText = ''
+        proc = subprocess.Popen(['systemctl', 'status', 'modecam.service'],
+                stdout=subprocess.PIPE)
+
+        for line in proc.stdout:
+            statusText += line.decode('utf-8') + ' \n'
+
+        update.message.reply_text(statusText)
+
+
+    # Callback to send image
     def sendPicture(self, stream):
         if len(self.watching_users) == 0:
             logger.info('no one watching')
@@ -96,7 +109,7 @@ class Modecam:
                 self.bot.send_photo(chat_id=userId, photo=stream)
 
 
-    # Callback when an audio is recorded
+    # Callback to send audio
     def sendAudio(self, stream):
         if len(self.watching_users) == 0:
             logger.info('no one watching')
@@ -106,6 +119,7 @@ class Modecam:
             for userId in self.watching_users:
                 stream.seek(0)
                 self.bot.send_voice(chat_id=userId, voice=stream)
+
 
     # Turn the watch handler off.
     def off(self, update, context):
@@ -149,11 +163,15 @@ class Modecam:
         dp.add_handler(CommandHandler("h", self.help))
         dp.add_handler(CommandHandler("help", self.help))
 
-        # start audio watch
+        # status
+        dp.add_handler(CommandHandler("stat", self.status))
+        dp.add_handler(CommandHandler("status", self.status))
+
+        # start to watch
         dp.add_handler(CommandHandler("w", self.watch))
         dp.add_handler(CommandHandler("watch", self.watch))
 
-        # stop audio watch
+        # stop watching
         dp.add_handler(CommandHandler("o", self.off))
         dp.add_handler(CommandHandler("off", self.off))
         dp.add_handler(CommandHandler("stop", self.off))
