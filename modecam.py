@@ -88,11 +88,10 @@ class Modecam:
     # status handler
     def status(self, update, context):
         statusText = ''
-        proc = subprocess.Popen(['systemctl', 'status', 'modecam.service'],
-                stdout=subprocess.PIPE)
+        proc = subprocess.Popen(['./status.sh'], stdout=subprocess.PIPE)
 
         for line in proc.stdout:
-            statusText += line.decode('utf-8') + ' \n'
+            statusText += line.decode('utf-8') + '\n'
 
         update.message.reply_text(statusText)
 
