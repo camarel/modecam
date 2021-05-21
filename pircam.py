@@ -46,10 +46,13 @@ class Pircam:
             return_value, image = camera.read()
 
             if frames == 0:
-                is_success, imbuffer = cv2.imencode('.jpg', image)
-                io_buf = BytesIO(imbuffer)
+                encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), 70]
+                is_success, imbuffer = cv2.imencode('.jpg', image, encode_param)
+                stream = BytesIO(imbuffer)
 
-                self.bot.sendPicture(io_buf)
+                self.bot.sendPicture(stream)
+                stream.close()
+
                 if (loop < 2):
                     loop += 1
                     frames = 10
