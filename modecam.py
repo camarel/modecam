@@ -51,10 +51,16 @@ class Modecam:
         else:
             print("User was not added")
 
+    def ping(self, update, context):
+        user = update.message.from_user
+
+        update.message.reply_text('Hello, up and running')
+
     def help(self, update, context):
         helpText = ('Available commands:\n' +
         '/watch - start watching\n' +
         '/off - stop watching\n' +
+        '/ping - check ping\n' +
         'Or the following short forms:\n' +
         '/w - start watching\n' +
         '/o - stop watching\n')
@@ -161,6 +167,10 @@ class Modecam:
         # help command
         dp.add_handler(CommandHandler("h", self.help))
         dp.add_handler(CommandHandler("help", self.help))
+
+        # ping command
+        dp.add_handler(CommandHandler("p", self.ping))
+        dp.add_handler(CommandHandler("ping", self.ping))
 
         # status
         dp.add_handler(CommandHandler("stat", self.status))
