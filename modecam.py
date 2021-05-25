@@ -30,6 +30,11 @@ class Modecam:
     allowed_users = []
     watching_users = []
 
+    def updateWatchingUsers(self):
+        config['DEFAULT']['WatchingUsers'] = json.dumps(self.watching_users)
+        with open('settings.ini', 'w') as configfile:
+            config.write(configfile)
+
     # Start handler to open new convertion with the bot.
     def start(self, update, context):
         user = update.message.from_user
@@ -90,6 +95,7 @@ class Modecam:
 
                 self.watching_users.append(user['id'])
                 update.message.reply_text('starting to watch')
+                self.updateWatchingUsers()
 
         else:
             update.message.reply_text('you are not allowed to run this service')
@@ -140,6 +146,7 @@ class Modecam:
         if user['id'] in self.watching_users:
             self.watching_users.remove(user['id'])
             update.message.reply_text('stopped watching')
+            self.updateWatchingUsers()
 
             if len(self.watching_users) == 0:
                 logger.info('turning modecam off')
@@ -159,6 +166,7 @@ class Modecam:
 
     def startBot(self):
         self.allowed_users = json.loads(config['DEFAULT']['AllowedUsers'])
+        self.watching_users = json.loads(config['DEFAULT']['WatchingUsers'])
 
         # Create the Updater
         updater = Updater(config['DEFAULT']['Token'], use_context=True)
@@ -198,6 +206,10 @@ class Modecam:
 
         # Start the Bot
         updater.start_polling()
+
+        # restart pircam with already watching users
+        if len(self.watching_users) != 0:
+            pircam.start()
 
         # Run the bot until you press Ctrl-C or the process receives SIGINT,
         # SIGTERM or SIGABRT. This should be used most of the time, since
