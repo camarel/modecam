@@ -4,10 +4,17 @@ import json
 import select
 import sys
 import subprocess
+import random
 
 from pircam import Pircam
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 
+pingMessages = [
+  'pong',
+  'Yes, yes, here I am',
+  'dont worry, all fine',
+  'what??'
+]
 
 # Enable logging
 logging.basicConfig(format='%(levelname)s - %(message)s', level=logging.INFO)
@@ -41,7 +48,6 @@ class Modecam:
 
         if (inp and sys.stdin.readline().strip() == 'y'):
             self.allowed_users.append(user['id'])
-            self.allowed_users.append(131211)
 
             config['DEFAULT']['AllowedUsers'] = json.dumps(self.allowed_users)
             with open('settings.ini', 'w') as configfile:
@@ -52,9 +58,9 @@ class Modecam:
             print("User was not added")
 
     def ping(self, update, context):
-        user = update.message.from_user
+        j = random.randint(0, len(pingMessages)-1)
 
-        update.message.reply_text('Hello, up and running')
+        update.message.reply_text(pingMessages[j])
 
     def help(self, update, context):
         helpText = ('Available commands:\n' +
@@ -141,7 +147,6 @@ class Modecam:
                 pircam.stop()
             else:
                 logger.info('modecam still on')
-
                 update.message.reply_text('but modecam is still running')
 
         else:
